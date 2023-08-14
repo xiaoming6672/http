@@ -1,0 +1,12 @@
+ext {
+
+    appcompat = '1.4.1'
+    gson = '2.10.1'
+
+    okhttp3 = '4.11.0'
+    retrofit = '2.9.0'
+    rxjava3 = '3.1.6'
+    rxandroid = '3.0.2'
+
+    library_utils = '1.2.2'
+}
