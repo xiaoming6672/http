@@ -12,6 +12,7 @@ import com.zhang.library.utils.CollectionUtils;
 import com.zhang.library.utils.LogUtils;
 import com.zhang.library.utils.context.ContextUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,57 +73,32 @@ public class RetrofitSDK {
     /**
      * 初始化
      *
-     * @param isDebug 是否是debug版本
+     * @param context 上下文
      * @param host    主域名
      */
-    public RetrofitSDK init(boolean isDebug, @NonNull String host) {
-        return init(isDebug, host, null);
-    }
-
-    /**
-     * 初始化
-     *
-     * @param isDebug         是否是debug版本
-     * @param host            主域名
-     * @param interceptorList 额外添加的拦截器列表
-     */
-    public RetrofitSDK init(boolean isDebug, @NonNull String host, List<Interceptor> interceptorList) {
-        this.mBaseUrl = ObjectsCompat.requireNonNull(host, "Host is Null");
-        this.isRelease = !isDebug;
-
-        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(message -> LogUtils.debug(TAG, message))
-                .setLevel(isDebug ? HttpLoggingInterceptor.Level.HEADERS : HttpLoggingInterceptor.Level.NONE);
-//                .setLevel(isDebug ? HttpLoggingInterceptor.Level.BODY : HttpLoggingInterceptor.Level.NONE);
-
-        OkHttpClient.Builder builder = new OkHttpClient.Builder()
-                .retryOnConnectionFailure(true) //默认重试一次，若需要重试N次，则要实现拦截器。
-                .connectTimeout(DEFAULT_CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                .readTimeout(DEFAULT_READ_TIMEOUT, TimeUnit.SECONDS)
-                .writeTimeout(DEFAULT_WRITE_TIMEOUT, TimeUnit.SECONDS)
-
-//                .sslSocketFactory(TrustAllHostnameVerifier.createSSLSocketFactory(), new TrustAllCerts())
-//                .hostnameVerifier(new TrustAllHostnameVerifier())
-
-                .cache(new Cache(ContextUtils.get().getCacheDir(), 10 * 1024 * 1024));  //10M大小
-
-        builder.addNetworkInterceptor(httpLoggingInterceptor)
+    public RetrofitSDK init(Context context, @NonNull String host) {
+        BuildParam buildParam = BuildParam.newBuilder()
+                .setDebug(false)
+                .setRetryOnConnectionFailure(true)
+                .setConnectTimeout(DEFAULT_CONNECT_TIMEOUT * 1000)
+                .setReadTimeout(DEFAULT_READ_TIMEOUT * 1000)
+                .setWriteTimeout(DEFAULT_WRITE_TIMEOUT * 1000)
+                .setCacheSize(10 * 1024 * 1024)
                 .addInterceptor(new RequestBodyTransformationInterceptor())
                 .addInterceptor(new RetrofitLogInterceptor())
                 .addInterceptor(new HeaderInterceptor())
                 .addInterceptor(new RequestEncryptionInterceptor())
                 .addInterceptor(new ResponseDecryptInterceptor());
-
-        if (!CollectionUtils.isEmpty(interceptorList)) {
-            for (Interceptor interceptor : interceptorList) {
-                builder.addInterceptor(interceptor);
-            }
-        }
-
-        mHttpClient = builder.build();
-
-        return this;
+        return init(context, host, buildParam);
     }
 
+    /**
+     * 初始化
+     *
+     * @param context 上下文
+     * @param host    主域名
+     * @param param   构造参数
+     */
     public RetrofitSDK init(@NonNull Context context, @NonNull String host, BuildParam param) {
         this.mBaseUrl = ObjectsCompat.requireNonNull(host, "Host is Null");
         this.isRelease = !param.isDebug;
@@ -301,9 +277,10 @@ public class RetrofitSDK {
     //</editor-fold>
 
 
+    /** 构造参数 */
     public static class BuildParam {
 
-        /** 是否debug版本 */
+        /** 是否debug模式 */
         boolean isDebug;
         /** 连接失败的时候是否默认重试一次，若需要重试N次，需要拦截器实现 */
         boolean retryOnConnectionFailure;
@@ -315,9 +292,14 @@ public class RetrofitSDK {
         long writeTimeout;
         /** 缓存内存大小，单位：B */
         long cacheSize;
+        /** 拦截器列表 */
         List<Interceptor> interceptorList;
 
         private BuildParam() {
+        }
+
+        public static BuildParam newBuilder() {
+            return new BuildParam();
         }
 
         public BuildParam setDebug(boolean debug) {
@@ -352,6 +334,19 @@ public class RetrofitSDK {
 
         public BuildParam setInterceptorList(List<Interceptor> interceptorList) {
             this.interceptorList = interceptorList;
+            return this;
+        }
+
+        public BuildParam addInterceptor(Interceptor interceptor) {
+            if (interceptor == null)
+                return this;
+
+            if (interceptorList == null)
+                interceptorList = new ArrayList<>();
+
+            if (!interceptorList.contains(interceptor))
+                interceptorList.add(interceptor);
+
             return this;
         }
     }
