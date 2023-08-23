@@ -5,6 +5,11 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.core.util.ObjectsCompat;
 
+import com.zhang.lib.http.inteceptor.HeaderInterceptor;
+import com.zhang.lib.http.inteceptor.RequestBodyTransformationInterceptor;
+import com.zhang.lib.http.inteceptor.RequestEncryptionInterceptor;
+import com.zhang.lib.http.inteceptor.ResponseDecryptInterceptor;
+import com.zhang.lib.http.inteceptor.RetrofitLogInterceptor;
 import com.zhang.lib.http.interfaces.IDecryptor;
 import com.zhang.lib.http.interfaces.IEncryptor;
 import com.zhang.lib.http.interfaces.IHeaderBuilder;
@@ -200,7 +205,7 @@ public class RetrofitSDK {
     }
 
     /** 生成请求的Header */
-    Map<String, String> generateRequestHeaders() {
+    public Map<String, String> generateRequestHeaders() {
         return getHeaderBuilder().generateRequestHeaders();
     }
 
@@ -212,7 +217,7 @@ public class RetrofitSDK {
      *
      * @return 加密后的参数
      */
-    String encrypt(String url, String params) {
+    public String encrypt(String url, String params) {
         return getEncryptor().encryptParam(url, params);
     }
 
@@ -224,7 +229,7 @@ public class RetrofitSDK {
      *
      * @return 解密后的结果
      */
-    String decrypt(String url, String content) {
+    public String decrypt(String url, String content) {
         return getDecryptor().decryptResponse(url, content);
     }
 

@@ -1,9 +1,10 @@
-package com.zhang.lib.http;
+package com.zhang.lib.http.inteceptor;
 
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
+import com.zhang.lib.http.RetrofitSDK;
 import com.zhang.lib.http.constant.RetrofitConstant;
 import com.zhang.library.utils.LogUtils;
 
@@ -20,7 +21,7 @@ import okhttp3.Response;
  *
  * @author ZhangXiaoMing 2023-06-12 21:02 周一
  */
-class HeaderInterceptor implements Interceptor {
+public class HeaderInterceptor implements Interceptor {
 
 
     @NonNull

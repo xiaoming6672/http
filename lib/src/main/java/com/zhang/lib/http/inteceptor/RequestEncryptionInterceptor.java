@@ -1,9 +1,10 @@
-package com.zhang.lib.http;
+package com.zhang.lib.http.inteceptor;
 
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
+import com.zhang.lib.http.RetrofitSDK;
 import com.zhang.lib.http.constant.RetrofitConstant;
 import com.zhang.library.utils.LogUtils;
 
@@ -21,7 +22,7 @@ import okio.Buffer;
  *
  * @author ZhangXiaoMing 2023-05-19 20:27 周五
  */
-class RequestEncryptionInterceptor implements Interceptor {
+public class RequestEncryptionInterceptor implements Interceptor {
 
     private static final String TAG = "RequestEncryptionInterceptor";
 

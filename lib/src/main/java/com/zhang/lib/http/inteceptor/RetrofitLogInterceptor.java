@@ -1,9 +1,10 @@
-package com.zhang.lib.http;
+package com.zhang.lib.http.inteceptor;
 
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
+import com.zhang.lib.http.RetrofitSDK;
 import com.zhang.lib.http.constant.RetrofitConstant;
 import com.zhang.library.utils.LogUtils;
 
@@ -25,7 +26,7 @@ import okio.BufferedSource;
  *
  * @author ZhangXiaoMing 2023-05-16 10:08 周二
  */
-class RetrofitLogInterceptor implements Interceptor {
+public class RetrofitLogInterceptor implements Interceptor {
 
     private static final String TAG = "RetrofitHttp";
 

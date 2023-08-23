@@ -1,4 +1,4 @@
-package com.zhang.lib.http;
+package com.zhang.lib.http.inteceptor;
 
 import android.text.TextUtils;
 
@@ -24,7 +24,7 @@ import okhttp3.Response;
  *
  * @author ZhangXiaoMing 2023-05-21 17:48 周日
  */
-class RequestBodyTransformationInterceptor implements Interceptor {
+public class RequestBodyTransformationInterceptor implements Interceptor {
 
     @NonNull
     @Override

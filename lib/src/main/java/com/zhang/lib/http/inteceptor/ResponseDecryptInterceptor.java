@@ -1,9 +1,10 @@
-package com.zhang.lib.http;
+package com.zhang.lib.http.inteceptor;
 
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
+import com.zhang.lib.http.RetrofitSDK;
 import com.zhang.lib.http.constant.RetrofitConstant;
 import com.zhang.library.utils.LogUtils;
 
@@ -19,7 +20,7 @@ import okhttp3.ResponseBody;
  *
  * @author ZhangXiaoMing 2023-05-15 22:23 周一
  */
-class ResponseDecryptInterceptor implements Interceptor {
+public class ResponseDecryptInterceptor implements Interceptor {
 
     private static final String TAG = "ResponseDecryptInterceptor";
 
