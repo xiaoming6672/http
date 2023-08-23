@@ -1,7 +1,11 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+apply from: "config.gradle"
+
 buildscript {
     repositories {
         google()
+        mavenCentral()
         jcenter()
     }
     dependencies {
@@ -14,7 +18,12 @@ buildscript {
 
 allprojects {
     repositories {
+
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://jitpack.io' }
+
         google()
+        mavenCentral()
         jcenter()
     }
 }
