@@ -13,6 +13,7 @@ import com.zhang.lib.http.inteceptor.RetrofitLogInterceptor;
 import com.zhang.lib.http.interfaces.IDecryptor;
 import com.zhang.lib.http.interfaces.IEncryptor;
 import com.zhang.lib.http.interfaces.IHeaderBuilder;
+import com.zhang.lib.http.interfaces.INewRequestBodyBuilder;
 import com.zhang.library.utils.CollectionUtils;
 import com.zhang.library.utils.LogUtils;
 import com.zhang.library.utils.context.ContextUtils;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.Cache;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory;
@@ -58,6 +60,7 @@ public class RetrofitSDK {
     private IHeaderBuilder mHeaderBuilder;
     private IEncryptor mEncryptor;
     private IDecryptor mDecryptor;
+    private INewRequestBodyBuilder mRequestBodyBuilder;
 
     private RetrofitSDK() {
     }
@@ -165,6 +168,16 @@ public class RetrofitSDK {
         return this;
     }
 
+    /**
+     * 设置解密器
+     *
+     * @param builder 构造者
+     */
+    public RetrofitSDK setNewRequestBodyBuilder(INewRequestBodyBuilder builder) {
+        mRequestBodyBuilder = builder;
+        return this;
+    }
+
 
     /**
      * 生成请求接口类对象
@@ -262,6 +275,20 @@ public class RetrofitSDK {
             mDecryptor = mDefaultDecryptor;
 
         return mDecryptor;
+    }
+
+    /** 是否有新请求体构造器 */
+    public boolean hasNewRequestBodyBuilder() {
+        return mRequestBodyBuilder != null;
+    }
+
+    /**
+     * 创建新的请求体
+     *
+     * @param paramMap 参数集合
+     */
+    public RequestBody newRequestBody(Map<String, Object> paramMap) {
+        return mRequestBodyBuilder.createRequestBody(paramMap);
     }
 
 
