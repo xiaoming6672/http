@@ -1,6 +1,7 @@
 ext {
 
     appcompat = '1.4.1'
+    core = '1.6.0'
     gson = '2.10.1'
 
     okhttp3 = '4.11.0'
