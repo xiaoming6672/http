@@ -52,6 +52,8 @@ public class RetrofitSDK {
 
     private static volatile RetrofitSDK instance;
 
+    /** {@link Retrofit}对象合集 */
+    private final Map<String, Retrofit> mRetrofitMap;
     private OkHttpClient mHttpClient;
     private String mBaseUrl;
     /** 是否是正式版本 */
@@ -63,6 +65,7 @@ public class RetrofitSDK {
     private INewRequestBodyBuilder mRequestBodyBuilder;
 
     private RetrofitSDK() {
+        mRetrofitMap = new HashMap<>();
     }
 
     public static RetrofitSDK getInstance() {
@@ -197,12 +200,17 @@ public class RetrofitSDK {
      * @param <T>     请求接口类
      */
     public <T> T create(String baseUrl, Class<T> clazz) {
-        Retrofit retrofit = new Retrofit.Builder()
+        Retrofit retrofit = mRetrofitMap.get(baseUrl);
+        if (retrofit != null)
+            return retrofit.create(clazz);
+
+        retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(mHttpClient)
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
                 .build();
+        mRetrofitMap.put(baseUrl, retrofit);
         return retrofit.create(clazz);
     }
 
