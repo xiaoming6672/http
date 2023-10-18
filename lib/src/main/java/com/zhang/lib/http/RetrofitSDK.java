@@ -1,10 +1,13 @@
 package com.zhang.lib.http;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.ObjectsCompat;
 
+import com.zhang.lib.http.ca.TrustCerts;
+import com.zhang.lib.http.ca.TrustHostnameVerifier;
 import com.zhang.lib.http.inteceptor.HeaderInterceptor;
 import com.zhang.lib.http.inteceptor.RequestBodyTransformationInterceptor;
 import com.zhang.lib.http.inteceptor.RequestEncryptionInterceptor;
@@ -18,11 +21,16 @@ import com.zhang.library.utils.CollectionUtils;
 import com.zhang.library.utils.LogUtils;
 import com.zhang.library.utils.context.ContextUtils;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
 
 import okhttp3.Cache;
 import okhttp3.Interceptor;
@@ -54,6 +62,9 @@ public class RetrofitSDK {
 
     /** {@link Retrofit}对象合集 */
     private final Map<String, Retrofit> mRetrofitMap;
+    /** 信任域名列表 */
+    @NonNull
+    private final List<String> mTrustUrlList;
     private OkHttpClient mHttpClient;
     private String mBaseUrl;
     /** 是否是正式版本 */
@@ -66,6 +77,7 @@ public class RetrofitSDK {
 
     private RetrofitSDK() {
         mRetrofitMap = new HashMap<>();
+        mTrustUrlList = new ArrayList<>();
     }
 
     public static RetrofitSDK getInstance() {
@@ -117,6 +129,11 @@ public class RetrofitSDK {
         ContextUtils.set(context);
         LogUtils.init(param.isDebug, param.isDebug);
 
+        if (param.trustUrlList != null)
+            mTrustUrlList.addAll(param.trustUrlList);
+        if (!mTrustUrlList.contains(host))
+            mTrustUrlList.add(host);
+
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(message -> LogUtils.debug(TAG, message))
                 .setLevel(isRelease ? HttpLoggingInterceptor.Level.NONE : HttpLoggingInterceptor.Level.HEADERS);
 
@@ -135,6 +152,9 @@ public class RetrofitSDK {
                 builder.addInterceptor(interceptor);
             }
         }
+
+        builder.sslSocketFactory(getSSLSocketFactory(), new TrustCerts());
+        builder.hostnameVerifier(new TrustHostnameVerifier());
 
         mHttpClient = builder.build();
 
@@ -220,6 +240,11 @@ public class RetrofitSDK {
         return mBaseUrl;
     }
 
+    @NonNull
+    public List<String> getTrustUrlList() {
+        return mTrustUrlList;
+    }
+
     /** 是否是正式版本 */
     public boolean isRelease() {
         return isRelease;
@@ -269,6 +294,18 @@ public class RetrofitSDK {
 
     public boolean hasDecryptor() {
         return mDecryptor != null && mDecryptor != mDefaultDecryptor;
+    }
+
+    private SSLSocketFactory getSSLSocketFactory() {
+        try {
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, new TrustManager[]{new TrustCerts()}, new SecureRandom());
+            return sslContext.getSocketFactory();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return (SSLSocketFactory) SSLSocketFactory.getDefault();
     }
 
     private IEncryptor getEncryptor() {
@@ -334,6 +371,8 @@ public class RetrofitSDK {
         long cacheSize;
         /** 拦截器列表 */
         List<Interceptor> interceptorList;
+        /** 信任域名列表 */
+        List<String> trustUrlList;
 
         private BuildParam() {
         }
@@ -389,5 +428,24 @@ public class RetrofitSDK {
 
             return this;
         }
+
+        public BuildParam setTrustUrlList(List<String> trustUrlList) {
+            this.trustUrlList = trustUrlList;
+            return this;
+        }
+
+        public BuildParam addTrustUrl(String trustUrl) {
+            if (TextUtils.isEmpty(trustUrl))
+                return this;
+
+            if (trustUrlList == null)
+                trustUrlList = new ArrayList<>();
+
+            if (!trustUrlList.contains(trustUrl))
+                trustUrlList.add(trustUrl);
+
+            return this;
+        }
+
     }
 }
