@@ -8,6 +8,7 @@ import androidx.core.util.ObjectsCompat;
 
 import com.zhang.lib.http.ca.TrustCerts;
 import com.zhang.lib.http.ca.TrustHostnameVerifier;
+import com.zhang.lib.http.factory.XMGsonConverterFactory;
 import com.zhang.lib.http.inteceptor.HeaderInterceptor;
 import com.zhang.lib.http.inteceptor.RequestBodyTransformationInterceptor;
 import com.zhang.lib.http.inteceptor.RequestEncryptionInterceptor;
@@ -39,7 +40,6 @@ import okhttp3.RequestBody;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * Retrofit接口请求封装类
@@ -227,7 +227,8 @@ public class RetrofitSDK {
         retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(mHttpClient)
-                .addConverterFactory(GsonConverterFactory.create())
+//                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(XMGsonConverterFactory.create())
                 .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
                 .build();
         mRetrofitMap.put(baseUrl, retrofit);
