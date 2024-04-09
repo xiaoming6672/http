@@ -3,9 +3,6 @@ package com.zhang.lib.http;
 import android.content.Context;
 import android.text.TextUtils;
 
-import androidx.annotation.NonNull;
-import androidx.core.util.ObjectsCompat;
-
 import com.zhang.lib.http.ca.TrustCerts;
 import com.zhang.lib.http.ca.TrustHostnameVerifier;
 import com.zhang.lib.http.factory.XMGsonConverterFactory;
@@ -33,6 +30,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
+import androidx.annotation.NonNull;
+import androidx.core.util.ObjectsCompat;
 import okhttp3.Cache;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
@@ -62,6 +61,9 @@ public class RetrofitSDK {
 
     /** {@link Retrofit}对象合集 */
     private final Map<String, Retrofit> mRetrofitMap;
+    /** Retrofit接口api示例对象集合 */
+    private final Map<String, List<Object>> mApiMap;
+
     /** 信任域名列表 */
     @NonNull
     private final List<String> mTrustUrlList;
@@ -77,6 +79,8 @@ public class RetrofitSDK {
 
     private RetrofitSDK() {
         mRetrofitMap = new HashMap<>();
+        mApiMap = new HashMap<>();
+
         mTrustUrlList = new ArrayList<>();
     }
 
@@ -219,10 +223,27 @@ public class RetrofitSDK {
      * @param clazz   请求接口类
      * @param <T>     请求接口类
      */
+    @SuppressWarnings("unchecked")
     public <T> T create(String baseUrl, Class<T> clazz) {
+        List<Object> apiList = mApiMap.get(baseUrl);
+        if (apiList == null) {
+            apiList = new ArrayList<>();
+            mApiMap.put(baseUrl, apiList);
+        }
+
+        if (!apiList.isEmpty()) {
+            for (Object item : apiList) {
+                if (clazz.isAssignableFrom(item.getClass()))
+                    return (T) item;
+            }
+        }
+
         Retrofit retrofit = mRetrofitMap.get(baseUrl);
-        if (retrofit != null)
-            return retrofit.create(clazz);
+        if (retrofit != null) {
+            T api = retrofit.create(clazz);
+            apiList.add(api);
+            return api;
+        }
 
         retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
@@ -232,7 +253,10 @@ public class RetrofitSDK {
                 .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
                 .build();
         mRetrofitMap.put(baseUrl, retrofit);
-        return retrofit.create(clazz);
+
+        T api = retrofit.create(clazz);
+        apiList.add(api);
+        return api;
     }
 
 
