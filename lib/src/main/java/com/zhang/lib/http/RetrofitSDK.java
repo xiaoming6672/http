@@ -33,6 +33,7 @@ import javax.net.ssl.TrustManager;
 import androidx.annotation.NonNull;
 import androidx.core.util.ObjectsCompat;
 import okhttp3.Cache;
+import okhttp3.CookieJar;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
@@ -398,6 +399,8 @@ public class RetrofitSDK {
         List<Interceptor> interceptorList;
         /** 信任域名列表 */
         List<String> trustUrlList;
+        /** cookie */
+        CookieJar cookieJar;
 
         private BuildParam() {
         }
@@ -433,6 +436,11 @@ public class RetrofitSDK {
 
         public BuildParam setCacheSize(long cacheSize) {
             this.cacheSize = cacheSize;
+            return this;
+        }
+
+        public BuildParam setCookieJar(CookieJar cookieJar) {
+            this.cookieJar = cookieJar;
             return this;
         }
 
