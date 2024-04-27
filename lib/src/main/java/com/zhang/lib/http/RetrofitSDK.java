@@ -3,9 +3,12 @@ package com.zhang.lib.http;
 import android.content.Context;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+import androidx.core.util.ObjectsCompat;
+
 import com.zhang.lib.http.ca.TrustCerts;
 import com.zhang.lib.http.ca.TrustHostnameVerifier;
-import com.zhang.lib.http.factory.XMGsonConverterFactory;
+import com.zhang.lib.http.factory.XMConverterFactory;
 import com.zhang.lib.http.inteceptor.HeaderInterceptor;
 import com.zhang.lib.http.inteceptor.RequestBodyTransformationInterceptor;
 import com.zhang.lib.http.inteceptor.RequestEncryptionInterceptor;
@@ -15,6 +18,7 @@ import com.zhang.lib.http.interfaces.IDecryptor;
 import com.zhang.lib.http.interfaces.IEncryptor;
 import com.zhang.lib.http.interfaces.IHeaderBuilder;
 import com.zhang.lib.http.interfaces.INewRequestBodyBuilder;
+import com.zhang.lib.http.interfaces.IResponseContentAnalyzer;
 import com.zhang.library.utils.CollectionUtils;
 import com.zhang.library.utils.LogUtils;
 import com.zhang.library.utils.context.ContextUtils;
@@ -30,14 +34,14 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-import androidx.annotation.NonNull;
-import androidx.core.util.ObjectsCompat;
 import okhttp3.Cache;
 import okhttp3.CookieJar;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.CallAdapter;
+import retrofit2.Converter;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory;
 
@@ -60,6 +64,11 @@ public class RetrofitSDK {
 
     private static volatile RetrofitSDK instance;
 
+    /** 请求结果转换器工厂列表 */
+    private final List<Converter.Factory> mConverterFactoryList;
+    /** 请求适配器工厂列表 */
+    private final List<CallAdapter.Factory> mAdapterFactoryList;
+
     /** {@link Retrofit}对象合集 */
     private final Map<String, Retrofit> mRetrofitMap;
     /** Retrofit接口api示例对象集合 */
@@ -73,12 +82,21 @@ public class RetrofitSDK {
     /** 是否是正式版本 */
     private boolean isRelease;
 
+    /** Header构造者 */
     private IHeaderBuilder mHeaderBuilder;
+    /** 加密器 */
     private IEncryptor mEncryptor;
+    /** 解密器 */
     private IDecryptor mDecryptor;
+    /** 请求体构造者 */
     private INewRequestBodyBuilder mRequestBodyBuilder;
+    /** 请求结果分析器 */
+    private IResponseContentAnalyzer mResponseAnalyzer;
 
     private RetrofitSDK() {
+        mConverterFactoryList = new ArrayList<>();
+        mAdapterFactoryList = new ArrayList<>();
+
         mRetrofitMap = new HashMap<>();
         mApiMap = new HashMap<>();
 
@@ -163,6 +181,14 @@ public class RetrofitSDK {
 
         mHttpClient = builder.build();
 
+        mConverterFactoryList.add(XMConverterFactory.create());
+        if (param.converterFactoryList != null)
+            mConverterFactoryList.addAll(param.converterFactoryList);
+
+        mAdapterFactoryList.add(RxJava3CallAdapterFactory.create());
+        if (param.adapterFactoryList != null)
+            mAdapterFactoryList.addAll(param.adapterFactoryList);
+
         return this;
     }
 
@@ -206,6 +232,16 @@ public class RetrofitSDK {
         return this;
     }
 
+    /**
+     * 设置请求结果分析器
+     *
+     * @param analyzer 分析器
+     */
+    public RetrofitSDK setResponseAnalyzer(IResponseContentAnalyzer analyzer) {
+        mResponseAnalyzer = analyzer;
+        return this;
+    }
+
 
     /**
      * 生成请求接口类对象
@@ -246,13 +282,23 @@ public class RetrofitSDK {
             return api;
         }
 
-        retrofit = new Retrofit.Builder()
+        Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl(baseUrl)
-                .client(mHttpClient)
+                .client(mHttpClient);
 //                .addConverterFactory(GsonConverterFactory.create())
-                .addConverterFactory(XMGsonConverterFactory.create())
-                .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
-                .build();
+//                .addConverterFactory(XMGsonConverterFactory.create())
+//                .addConverterFactory(XMConverterFactory.create())
+//                .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
+
+        for (Converter.Factory factory : mConverterFactoryList)
+            builder.addConverterFactory(factory);
+
+        for (CallAdapter.Factory factory : mAdapterFactoryList)
+            builder.addCallAdapterFactory(factory);
+
+        retrofit = builder.build();
+
+
         mRetrofitMap.put(baseUrl, retrofit);
 
         T api = retrofit.create(clazz);
@@ -362,6 +408,17 @@ public class RetrofitSDK {
         return mRequestBodyBuilder.createRequestBody(paramMap);
     }
 
+    /**
+     * 设置请求结果分析器
+     *
+     * @param responseContent 分析器
+     */
+    public void analyseResponseContent(@NonNull String responseContent) {
+        if (mResponseAnalyzer != null) {
+            mResponseAnalyzer.analyseResponseContent(responseContent);
+        }
+    }
+
 
     //<editor-fold desc="默认加密器">
     private final IEncryptor mDefaultEncryptor;
@@ -401,6 +458,10 @@ public class RetrofitSDK {
         List<String> trustUrlList;
         /** cookie */
         CookieJar cookieJar;
+        /** 请求结果转换器工厂列表 */
+        List<Converter.Factory> converterFactoryList;
+        /** 请求适配器工厂列表 */
+        List<CallAdapter.Factory> adapterFactoryList;
 
         private BuildParam() {
         }
@@ -434,21 +495,31 @@ public class RetrofitSDK {
             return this;
         }
 
+        /**
+         * 设置缓存大小，单位：B
+         *
+         * @param cacheSize 缓存大小
+         */
         public BuildParam setCacheSize(long cacheSize) {
             this.cacheSize = cacheSize;
             return this;
         }
 
+        /**
+         * 设置cookie配置
+         *
+         * @param cookieJar cookie
+         */
         public BuildParam setCookieJar(CookieJar cookieJar) {
             this.cookieJar = cookieJar;
             return this;
         }
 
-        public BuildParam setInterceptorList(List<Interceptor> interceptorList) {
-            this.interceptorList = interceptorList;
-            return this;
-        }
-
+        /**
+         * 添加拦截器
+         *
+         * @param interceptor 拦截器
+         */
         public BuildParam addInterceptor(Interceptor interceptor) {
             if (interceptor == null)
                 return this;
@@ -462,11 +533,25 @@ public class RetrofitSDK {
             return this;
         }
 
-        public BuildParam setTrustUrlList(List<String> trustUrlList) {
-            this.trustUrlList = trustUrlList;
+        public BuildParam addInterceptor(Interceptor... interceptors) {
+            if (interceptors != null) {
+                if (interceptorList == null)
+                    interceptorList = new ArrayList<>();
+
+                for (Interceptor interceptor : interceptors) {
+                    if (!interceptorList.contains(interceptor))
+                        interceptorList.add(interceptor);
+                }
+            }
+
             return this;
         }
 
+        /**
+         * 添加加解密白名单链接
+         *
+         * @param trustUrl 信任链接
+         */
         public BuildParam addTrustUrl(String trustUrl) {
             if (TextUtils.isEmpty(trustUrl))
                 return this;
@@ -476,6 +561,63 @@ public class RetrofitSDK {
 
             if (!trustUrlList.contains(trustUrl))
                 trustUrlList.add(trustUrl);
+
+            return this;
+        }
+
+        /**
+         * 添加加解密白名单链接
+         *
+         * @param trustUrls 信任链接
+         */
+        public BuildParam addTrustUrl(String... trustUrls) {
+            if (trustUrls != null) {
+                if (trustUrlList == null)
+                    trustUrlList = new ArrayList<>();
+
+                for (String url : trustUrls) {
+                    if (!trustUrlList.contains(url))
+                        trustUrlList.add(url);
+                }
+            }
+
+            return this;
+        }
+
+        /**
+         * 添加请求结果转换器工厂
+         *
+         * @param factories 转换器工厂
+         */
+        public BuildParam addConverterFactory(Converter.Factory... factories) {
+            if (factories != null) {
+                if (converterFactoryList == null)
+                    converterFactoryList = new ArrayList<>();
+
+                for (Converter.Factory factory : factories) {
+                    if (!converterFactoryList.contains(factory))
+                        converterFactoryList.add(factory);
+                }
+            }
+
+            return this;
+        }
+
+        /**
+         * 添加请求适配器工厂
+         *
+         * @param factories 工厂
+         */
+        public BuildParam addAdapterFactory(CallAdapter.Factory... factories) {
+            if (factories != null) {
+                if (adapterFactoryList == null)
+                    adapterFactoryList = new ArrayList<>();
+
+                for (CallAdapter.Factory factory : factories) {
+                    if (!adapterFactoryList.contains(factory))
+                        adapterFactoryList.add(factory);
+                }
+            }
 
             return this;
         }
