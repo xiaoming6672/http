@@ -7,8 +7,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 30
-        versionCode 6
-        versionName "1.4.1"
+        versionCode 7
+        versionName "1.5.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -23,6 +23,32 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    productFlavors {
+        // 指定apk名字输出格式 applicationVariants、libraryVariants以及testVariants，他们分别适用于app、library、app和library都适用。
+        android.libraryVariants.all { variant ->
+            variant.outputs.all {
+                outputFileName = "${rootProject.name}-${variant.buildType.name}-V${defaultConfig.versionName}.aar"
+            }
+
+            variant.assemble.doLast {
+                def out = new File("${project.rootDir}/aars-assemble/${variant.buildType.name}/")
+                copy {
+                    variant.outputs.forEach { file ->
+                        //复制到指定文件夹
+                        copy {
+                            from file.outputFile
+                            into out
+                        }
+                        //移动到指定文件夹
+                        //   ant.move file: file.outputFile,
+                        ////todir: "${project.rootDir}/apk"
+                        //       todir: out
+                    }
+                }
+            }
+        }
     }
 }
 
