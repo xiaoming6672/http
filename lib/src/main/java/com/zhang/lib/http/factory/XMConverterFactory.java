@@ -4,11 +4,14 @@ import androidx.annotation.NonNull;
 
 import com.zhang.lib.http.RetrofitSDK;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
+import okio.Buffer;
+import okio.BufferedSource;
 import retrofit2.Converter;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -46,7 +49,7 @@ public class XMConverterFactory extends Converter.Factory {
         Converter<ResponseBody, ?> converter = mFactory.responseBodyConverter(type, annotations, retrofit);
 
         return (Converter<ResponseBody, Object>) responseBody -> {
-            analyseResponseBody(responseBody);
+            analyseResponseContent(responseBody);
 
             if (type == String.class || converter == null)
                 return responseBody.string();
@@ -63,21 +66,29 @@ public class XMConverterFactory extends Converter.Factory {
         return mFactory.requestBodyConverter(type, parameterAnnotations, methodAnnotations, retrofit);
     }
 
+
     /** 分析请求结果 */
-    private void analyseResponseBody(ResponseBody body) {
+    private void analyseResponseContent(ResponseBody body) {
         if (body == null)
             return;
 
-        String content;
+        long contentLength = body.contentLength();
+        BufferedSource source = body.source();
+
         try {
-            content = body.string();
-        } catch (Exception e) {
+            source.request(Long.MAX_VALUE);
+        } catch (IOException e) {
             e.printStackTrace();
-            content = "";
         }
+
+        String content;
+        Buffer buffer = source.getBuffer();
+        if (contentLength != 0)
+            content = buffer.clone().readUtf8();
+        else
+            content = "";
 
         RetrofitSDK.getInstance().analyseResponseContent(content);
     }
-
 
 }
