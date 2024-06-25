@@ -3,9 +3,6 @@ package com.zhang.lib.http;
 import android.content.Context;
 import android.text.TextUtils;
 
-import androidx.annotation.NonNull;
-import androidx.core.util.ObjectsCompat;
-
 import com.zhang.lib.http.ca.TrustCerts;
 import com.zhang.lib.http.ca.TrustHostnameVerifier;
 import com.zhang.lib.http.factory.XMConverterFactory;
@@ -34,6 +31,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.util.ObjectsCompat;
 import okhttp3.Cache;
 import okhttp3.CookieJar;
 import okhttp3.Interceptor;
@@ -189,6 +189,9 @@ public class RetrofitSDK {
         if (param.adapterFactoryList != null)
             mAdapterFactoryList.addAll(param.adapterFactoryList);
 
+        Retrofit retrofit = createRetrofit(mBaseUrl);
+        mRetrofitMap.put(mBaseUrl, retrofit);
+
         return this;
     }
 
@@ -282,6 +285,20 @@ public class RetrofitSDK {
             return api;
         }
 
+        retrofit = createRetrofit(baseUrl);
+        mRetrofitMap.put(baseUrl, retrofit);
+
+        T api = retrofit.create(clazz);
+        apiList.add(api);
+        return api;
+    }
+
+    /**
+     * 创建 {@link Retrofit}对象
+     *
+     * @param baseUrl 域名
+     */
+    private Retrofit createRetrofit(String baseUrl) {
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .client(mHttpClient);
@@ -296,20 +313,23 @@ public class RetrofitSDK {
         for (CallAdapter.Factory factory : mAdapterFactoryList)
             builder.addCallAdapterFactory(factory);
 
-        retrofit = builder.build();
-
-
-        mRetrofitMap.put(baseUrl, retrofit);
-
-        T api = retrofit.create(clazz);
-        apiList.add(api);
-        return api;
+        return builder.build();
     }
 
 
     /** 请求主域名地址 */
     public String getHost() {
         return mBaseUrl;
+    }
+
+    /**
+     * 获取Retrofit对象
+     *
+     * @param baseUrl 域名
+     */
+    @Nullable
+    public Retrofit getRetrofit(String baseUrl) {
+        return mRetrofitMap.get(baseUrl);
     }
 
     @NonNull
