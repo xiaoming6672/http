@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.3"
+    namespace 'com.zhang.library'
+    compileSdkVersion 34
 
     defaultConfig {
         applicationId "com.zhang.library"
         minSdkVersion 18
-        targetSdkVersion 30
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
 
