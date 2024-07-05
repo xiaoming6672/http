@@ -9,8 +9,8 @@ plugins {
 
 val libGroupId = "com.library.xiaoming6672"
 val libArtifactId = "http"
-val libVersionCode = 13
-val libVersionName = "1.5.6"
+val libVersionCode = 14
+val libVersionName = "1.5.7"
 
 android {
     namespace = "com.zhang.lib.http"
@@ -76,4 +76,18 @@ dependencies {
     implementation(libs.okhttp3.logging.interceptor)
 
     implementation(libs.library.utils)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = libGroupId
+            artifactId = libArtifactId
+            version = libVersionName
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
