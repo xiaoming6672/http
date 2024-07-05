@@ -9,8 +9,8 @@ plugins {
 
 val libGroupId = "com.library.xiaoming6672"
 val libArtifactId = "http"
-val libVersionCode = 12
-val libVersionName = "1.5.5"
+val libVersionCode = 13
+val libVersionName = "1.5.6"
 
 android {
     namespace = "com.zhang.lib.http"
