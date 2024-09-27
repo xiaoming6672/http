@@ -3,6 +3,10 @@ package com.zhang.lib.http;
 import android.content.Context;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.util.ObjectsCompat;
+
 import com.zhang.lib.http.ca.TrustCerts;
 import com.zhang.lib.http.ca.TrustHostnameVerifier;
 import com.zhang.lib.http.factory.XMConverterFactory;
@@ -22,6 +26,7 @@ import com.zhang.library.utils.context.ContextUtils;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,9 +36,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.util.ObjectsCompat;
 import okhttp3.Cache;
 import okhttp3.CookieJar;
 import okhttp3.Interceptor;
@@ -322,6 +324,11 @@ public class RetrofitSDK {
         return mBaseUrl;
     }
 
+    /** 获取OkHttpClient对象 */
+    public OkHttpClient getHttpClient() {
+        return mHttpClient;
+    }
+
     /**
      * 获取Retrofit对象
      *
@@ -335,6 +342,15 @@ public class RetrofitSDK {
     @NonNull
     public List<String> getTrustUrlList() {
         return mTrustUrlList;
+    }
+
+    /**
+     * 添加信任域名
+     *
+     * @param url 域名
+     */
+    public void addTrustUrl(String... url) {
+        mTrustUrlList.addAll(Arrays.asList(url));
     }
 
     /** 是否是正式版本 */
